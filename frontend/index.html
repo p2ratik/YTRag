@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube RAG | Chat with Videos</title>
+    <meta name="description" content="Upload a YouTube video and chat with its content using AI-powered retrieval augmented generation." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="header-logo">
+            <span class="header-logo-play"></span>
+          </div>
+          <div class="sidebar-brand-copy">
+            <h1 class="header-title">YT RAG</h1>
+            <p class="sidebar-tagline">Chat with any video</p>
+          </div>
+        </div>
+
+        <button class="new-chat-btn" id="newChatBtn">
+          <span class="btn-icon">+</span>
+          <span>New Chat</span>
+        </button>
+
+        <div class="sidebar-chats" id="chatList"></div>
+
+        <div class="sidebar-footer">
+          <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+      </aside>
+
+      <div class="app-container">
+        <header class="header">
+          <div class="header-brand">
+            <h2 class="current-chat-title" id="currentChatTitle">Select a Conversation</h2>
+          </div>
+          <div class="connection-badge connected" id="connectionBadge">
+            <div class="connection-dot"></div>
+            <span id="connectionText">Online</span>
+          </div>
+        </header>
+
+        <section class="upload-section" id="uploadSection">
+          <div class="upload-card">
+            <div class="upload-label">
+              <span class="upload-label-icon">Link</span>
+              <span>Paste a YouTube URL to ground this chat</span>
+            </div>
+            <form class="upload-form" id="uploadForm">
+              <input
+                type="text"
+                class="url-input"
+                id="urlInput"
+                placeholder="https://www.youtube.com/watch?v=..."
+                autocomplete="off"
+              />
+              <button type="submit" class="upload-btn" id="uploadBtn">
+                <span id="uploadBtnText">Set Video</span>
+              </button>
+            </form>
+            <div class="upload-status" id="uploadStatus">
+              <span id="uploadStatusText"></span>
+            </div>
+            <div class="video-chip" id="videoChip" hidden>
+              <span class="video-chip-label">Current video</span>
+              <span class="video-chip-value" id="videoChipValue"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="chat-area">
+          <div class="chat-messages" id="chatMessages">
+            <div class="welcome-state" id="welcomeState">
+              <div class="welcome-icon">AI</div>
+              <div class="welcome-title">Start a new conversation</div>
+              <div class="welcome-subtitle">
+                Click "New Chat" on the sidebar, then optionally link a video to chat about it.
+              </div>
+            </div>
+          </div>
+
+          <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </section>
+
+        <section class="chat-input-section">
+          <div class="chat-input-wrapper">
+            <textarea
+              class="chat-input"
+              id="chatInput"
+              placeholder="Ask something..."
+              rows="1"
+              disabled
+            ></textarea>
+            <button class="send-btn" id="sendBtn" disabled>
+              <span class="send-icon">→</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

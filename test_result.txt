@@ -1,0 +1,75 @@
+============================================================
+  Pipeline Diagnostic
+============================================================
+
+============================================================
+  STEP 1: Database Contents
+============================================================
+  Total vectors in DB: 211
+  Distinct video_ids: ['a5UADG2c0sw', 'JKowwNf2CM0', 'test_video_001', 'Gfr50f6ZBvo']
+    'a5UADG2c0sw' → 13 chunks
+    'JKowwNf2CM0' → 14 chunks
+    'test_video_001' → 5 chunks
+    'Gfr50f6ZBvo' → 179 chunks
+
+  Sample row:
+    id: 1
+    video_id: 'test_video_001'
+    texts: 'Welcome to this tutorial on building RAG applications using LangChain and vector databases. Today we...'
+    start_time: 0.0
+    end_time: 15.5
+    has embedding: True
+    embedding dimension: 768
+
+============================================================
+  STEP 2: Embedding Check
+============================================================
+  ✓ Embedding works. Dimension: 768
+  First 5 values: [0.007273073308169842, 0.03544142469763756, -0.03614267334342003, 0.016583554446697235, 
+-0.05136163905262947]
+
+============================================================
+  STEP 3: Vector Retrieval (video_id='a5UADG2c0sw')
+============================================================
+
+  3a. Search WITHOUT video_id filter:
+      Results: 10
+      1. video_id='JKowwNf2CM0' | From BBC Learning English. This is Learning English from the...
+      2. video_id='JKowwNf2CM0' | we watched everything unfold
+on the news. That's it for this...
+      3. video_id='a5UADG2c0sw' | Hello. This is 6 Minute English
+from BBC Learning English. I...
+
+  3b. Search WITH video_id='a5UADG2c0sw':
+      Results: 10
+      1. video_id='a5UADG2c0sw' | Hello. This is 6 Minute English
+from BBC Learning English. I...
+      2. video_id='a5UADG2c0sw' | Here's Professor Tim Caro, a
+world authority on animal behav...
+      3. video_id='a5UADG2c0sw' | you mean it's easy to understand
+what is right and wrong. On...
+
+============================================================
+  STEP 4: Full Pipeline (video_id='a5UADG2c0sw')
+============================================================
+  Raw retrieval returned: 10 docs
+  After reranking: 7 docs
+
+============================================================
+  STEP 5: LLM Classifier Check
+============================================================
+  Query: "What is this video about?"
+    → action: direct
+    → prompt: "What is this video about?"
+
+  Query: "Explain the topic discussed at 2 minutes"
+    → action: retrieval
+    → prompt: "topic at 2 minutes"
+
+  Query: "Hello, how are you?"
+    → action: direct
+    → prompt: "Hello, how are you?"
+
+
+============================================================
+  Diagnostic complete. Review the output above.
