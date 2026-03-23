@@ -4,10 +4,23 @@ CREATE TABLE IF NOT EXISTS vector_store (
     video_id    TEXT NOT NULL,
     content     TEXT NOT NULL,
     start_time  NUMERIC(10, 3),
-    end_time    NUMERIC(10, 3),                  -- flexible: title, channel, etc.
+  end_time    NUMERIC(10, 3),
+  chunk_level TEXT NOT NULL DEFAULT 'child' CHECK (chunk_level IN ('child', 'parent')),
+  parent_chunk_id UUID REFERENCES vector_store(id) ON DELETE SET NULL,
+  chunk_index INTEGER,
+  parent_rank INTEGER,
     embedding   vector(768) NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_vector_store_scope_level
+ON vector_store (conversation_id, video_id, chunk_level);
+
+CREATE INDEX IF NOT EXISTS idx_vector_store_scope_chunk_index
+ON vector_store (conversation_id, video_id, chunk_index);
+
+CREATE INDEX IF NOT EXISTS idx_vector_store_parent_chunk_id
+ON vector_store (parent_chunk_id);
 
 create table if not exists users(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

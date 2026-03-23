@@ -73,3 +73,63 @@ async def group_chunks(conversation_id: str, video_id: str, window: int = 30, ov
         })
     print("[DEBUG] Now finished created chunbks for the given yt video :", len(groups))
     return groups
+
+
+def _build_parent_chunks(children: list[dict], parent_size: int = 6) -> tuple[list[dict], list[dict]]:
+    """
+    Build 3-minute parent chunks from ordered child chunks.
+
+    parent_size=6 means 6 x 30s child chunks per parent chunk.
+    Returns (parents, children_with_parent_rank).
+    """
+    parents = []
+    children_with_parent_rank = []
+
+    for i in range(0, len(children), parent_size):
+        parent_rank = i // parent_size
+        child_group = children[i:i + parent_size]
+        if not child_group:
+            continue
+
+        parent = {
+            "conversation_id": child_group[0]["conversation_id"],
+            "video_id": child_group[0]["video_id"],
+            "content": " ".join(chunk["content"] for chunk in child_group).strip(),
+            "start_time": child_group[0]["start_time"],
+            "end_time": child_group[-1]["end_time"],
+            "chunk_level": "parent",
+            "chunk_index": None,
+            "parent_rank": parent_rank,
+        }
+        parents.append(parent)
+
+        for child in child_group:
+            updated_child = dict(child)
+            updated_child["chunk_level"] = "child"
+            updated_child["parent_rank"] = parent_rank
+            children_with_parent_rank.append(updated_child)
+
+    return parents, children_with_parent_rank
+
+
+async def build_parent_child_chunks(
+    conversation_id: str,
+    video_id: str,
+    child_window: int = 30,
+    child_overlap: int = 5,
+    parent_size: int = 6,
+) -> dict:
+    """Create ordered child chunks and corresponding parent chunks with linkage metadata."""
+    children = await group_chunks(
+        conversation_id=conversation_id,
+        video_id=video_id,
+        window=child_window,
+        overlap=child_overlap,
+    )
+
+    for idx, chunk in enumerate(children):
+        chunk["chunk_level"] = "child"
+        chunk["chunk_index"] = idx
+
+    parents, linked_children = _build_parent_chunks(children, parent_size=parent_size)
+    return {"parents": parents, "children": linked_children}

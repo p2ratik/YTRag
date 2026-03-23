@@ -26,31 +26,31 @@ from backend.services.vector import insert_vectors
 # ── Sample data (mimics grouped YouTube transcript chunks) ──────────────
 SAMPLE_CHUNKS = [
     {
-        "texts": "Welcome to this tutorial on building RAG applications using LangChain and vector databases. Today we will cover the fundamentals of retrieval-augmented generation.",
+        "content": "Welcome to this tutorial on building RAG applications using LangChain and vector databases. Today we will cover the fundamentals of retrieval-augmented generation.",
         "start_time": 0.0,
         "end_time": 15.5,
         "video_id": "test_video_001",
     },
     {
-        "texts": "First, let's understand what embeddings are. An embedding is a numerical representation of text that captures its semantic meaning in a high-dimensional vector space.",
+        "content": "First, let's understand what embeddings are. An embedding is a numerical representation of text that captures its semantic meaning in a high-dimensional vector space.",
         "start_time": 15.5,
         "end_time": 30.0,
         "video_id": "test_video_001",
     },
     {
-        "texts": "Vector databases like pgvector allow us to store these embeddings and perform similarity searches efficiently using cosine distance or inner product.",
+        "content": "Vector databases like pgvector allow us to store these embeddings and perform similarity searches efficiently using cosine distance or inner product.",
         "start_time": 30.0,
         "end_time": 45.2,
         "video_id": "test_video_001",
     },
     {
-        "texts": "The retrieval step fetches the most relevant chunks from the database based on the user query embedding, and the generation step uses an LLM to synthesize an answer.",
+        "content": "The retrieval step fetches the most relevant chunks from the database based on the user query embedding, and the generation step uses an LLM to synthesize an answer.",
         "start_time": 45.2,
         "end_time": 60.0,
         "video_id": "test_video_001",
     },
     {
-        "texts": "Let's now set up our project. We need Python 3.10 or later, FastAPI for the backend, and SQLAlchemy with asyncpg for async database access.",
+        "content": "Let's now set up our project. We need Python 3.10 or later, FastAPI for the backend, and SQLAlchemy with asyncpg for async database access.",
         "start_time": 60.0,
         "end_time": 75.8,
         "video_id": "test_video_001",
@@ -74,7 +74,7 @@ async def generate_embeddings(chunks: list[dict]) -> list[dict]:
     of Embedding objects, each with an .embedding (list[float]).
     """
     print(f"[…] Generating embeddings for {len(chunks)} chunks …")
-    raw_texts = [chunk["texts"] for chunk in chunks]
+    raw_texts = [chunk["content"] for chunk in chunks]
     result = await embed(raw_texts)
 
     for chunk, emb in zip(chunks, result.data):

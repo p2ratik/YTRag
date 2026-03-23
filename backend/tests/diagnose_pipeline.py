@@ -62,7 +62,7 @@ async def check_database():
             print(f"\n  Sample row:")
             print(f"    id: {sample.id}")
             print(f"    video_id: '{sample.video_id}'")
-            print(f"    texts: '{sample.texts[:100]}...'")
+            print(f"    content: '{sample.content[:100]}...'")
             print(f"    start_time: {sample.start_time}")
             print(f"    end_time: {sample.end_time}")
             has_embedding = sample.embedding is not None
@@ -71,7 +71,7 @@ async def check_database():
                 emb_len = len(sample.embedding) if hasattr(sample.embedding, '__len__') else 'unknown'
                 print(f"    embedding dimension: {emb_len}")
 
-        return video_ids
+        return video_ids, str(sample.conversation_id) if sample else None
 
 
 async def check_embedding():
@@ -92,7 +92,7 @@ async def check_embedding():
         return False
 
 
-async def check_retrieval(video_id=None):
+async def check_retrieval(conversation_id: str, video_id=None):
     """Step 3: Does vector search return results?"""
     print("\n" + "=" * 60)
     print(f"  STEP 3: Vector Retrieval (video_id={video_id!r})")
@@ -103,18 +103,18 @@ async def check_retrieval(video_id=None):
     async with AsyncSessionLocal() as db:
         # First try without video_id filter
         print(f"\n  3a. Search WITHOUT video_id filter:")
-        results_all = await retrive_vectors(query, 10, db)
+        results_all = await retrive_vectors(conversation_id, query, 10, db)
         print(f"      Results: {len(results_all)}")
         for i, doc in enumerate(results_all[:3]):
-            print(f"      {i+1}. video_id='{doc.video_id}' | {doc.texts[:60]}...")
+            print(f"      {i+1}. video_id='{doc.video_id}' | {doc.content[:60]}...")
 
     if video_id:
         async with AsyncSessionLocal() as db:
             print(f"\n  3b. Search WITH video_id='{video_id}':")
-            results_filtered = await retrive_vectors(query, 10, db, video_id)
+            results_filtered = await retrive_vectors(conversation_id, query, 10, db, video_id)
             print(f"      Results: {len(results_filtered)}")
             for i, doc in enumerate(results_filtered[:3]):
-                print(f"      {i+1}. video_id='{doc.video_id}' | {doc.texts[:60]}...")
+                print(f"      {i+1}. video_id='{doc.video_id}' | {doc.content[:60]}...")
 
             if len(results_filtered) == 0 and len(results_all) > 0:
                 print(f"\n  ⚠️  MISMATCH: Results exist without filter but NOT with video_id='{video_id}'")
@@ -122,7 +122,7 @@ async def check_retrieval(video_id=None):
                 print(f"     DB video_ids: {set(doc.video_id for doc in results_all)}")
 
 
-async def check_reranking(video_id=None):
+async def check_reranking(conversation_id: str, video_id=None):
     """Step 4: Does reranking filter everything out?"""
     print("\n" + "=" * 60)
     print(f"  STEP 4: Full Pipeline (video_id={video_id!r})")
@@ -131,7 +131,7 @@ async def check_reranking(video_id=None):
     query = "What is this video about?"
 
     async with AsyncSessionLocal() as db:
-        results = await retrive_vectors(query, 10, db, video_id)
+        results = await retrive_vectors(conversation_id, query, 10, db, video_id)
         print(f"  Raw retrieval returned: {len(results)} docs")
 
         if results:
@@ -197,9 +197,13 @@ async def main():
     print("=" * 60)
 
     # Step 1
-    video_ids = await check_database()
-    if not video_ids:
+    db_info = await check_database()
+    if not db_info:
         print("\n❌ Cannot proceed — database is empty.")
+        return
+    video_ids, conversation_id = db_info
+    if not conversation_id:
+        print("\n❌ Cannot proceed — no conversation_id found.")
         return
 
     # Step 2
@@ -210,8 +214,8 @@ async def main():
 
     # Step 3 & 4 — test with first video_id found
     test_vid = video_ids[0]
-    await check_retrieval(test_vid)
-    await check_reranking(test_vid)
+    await check_retrieval(conversation_id, test_vid)
+    await check_reranking(conversation_id, test_vid)
 
     # Step 5
     await check_classifier()

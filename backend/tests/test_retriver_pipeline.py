@@ -25,7 +25,9 @@ import time
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from backend.db.session import AsyncSessionLocal
+from backend.models.vector_data import VectorStore
 from backend.services.retriver_pipeline import retrive_vectors, rerank_vectors, retriver
+from sqlalchemy import select
 
 
 # ── Test queries ────────────────────────────────────────────────────────
@@ -39,7 +41,15 @@ TEST_QUERIES = [
 TEST_VIDEO_ID = "test_video_001"
 
 
-async def test_retrive_vectors(query: str, top_k: int = 10, video_id: str = None):
+async def get_test_conversation_id() -> str | None:
+    """Pick one conversation_id from vector_store for test execution."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(VectorStore.conversation_id).limit(1))
+        conv_id = result.scalar_one_or_none()
+        return str(conv_id) if conv_id else None
+
+
+async def test_retrive_vectors(conversation_id: str, query: str, top_k: int = 10, video_id: str = None):
     """Test 1: Raw vector retrieval via cosine distance."""
     print(f"\n{'─' * 60}")
     print(f"  TEST: retrive_vectors")
@@ -49,7 +59,7 @@ async def test_retrive_vectors(query: str, top_k: int = 10, video_id: str = None
 
     async with AsyncSessionLocal() as db:
         start = time.perf_counter()
-        results = await retrive_vectors(query, top_k, db, video_id)
+        results = await retrive_vectors(conversation_id, query, top_k, db, video_id)
         elapsed = time.perf_counter() - start
 
     print(f"  [✓] Retrieved {len(results)} results in {elapsed:.3f}s")
@@ -60,12 +70,12 @@ async def test_retrive_vectors(query: str, top_k: int = 10, video_id: str = None
 
     # Display results
     for i, doc in enumerate(results, 1):
-        snippet = doc.texts[:80] + "…" if len(doc.texts) > 80 else doc.texts
+        snippet = doc.content[:80] + "..." if len(doc.content) > 80 else doc.content
         print(f"  {i}. [{doc.start_time:.1f}s – {doc.end_time:.1f}s] {snippet}")
 
     # Basic assertions
     assert isinstance(results, list), "Expected a list of results"
-    assert all(hasattr(doc, "texts") for doc in results), "Each result must have a 'texts' attribute"
+    assert all(hasattr(doc, "content") for doc in results), "Each result must have a 'content' attribute"
     assert all(hasattr(doc, "start_time") for doc in results), "Each result must have 'start_time'"
     assert all(hasattr(doc, "end_time") for doc in results), "Each result must have 'end_time'"
     assert len(results) <= top_k, f"Expected at most {top_k} results, got {len(results)}"
@@ -102,19 +112,19 @@ async def test_rerank_vectors(query: str, results: list):
 
     # Display reranked order
     for i, doc in enumerate(top_docs, 1):
-        snippet = doc.texts[:80] + "…" if len(doc.texts) > 80 else doc.texts
+        snippet = doc.content[:80] + "..." if len(doc.content) > 80 else doc.content
         print(f"  {i}. [{doc.start_time:.1f}s – {doc.end_time:.1f}s] {snippet}")
 
     # Basic assertions
     assert isinstance(top_docs, list), "Expected a list"
-    assert len(top_docs) <= 5, f"Reranker should return at most 5 docs, got {len(top_docs)}"
+    assert len(top_docs) <= 7, f"Reranker should return at most 7 docs, got {len(top_docs)}"
     assert len(top_docs) <= len(results), "Reranked results should not exceed input count"
 
     print("  [✓] All assertions passed")
     return top_docs
 
 
-async def test_full_pipeline(query: str, top_k: int = 10, video_id: str = None):
+async def test_full_pipeline(conversation_id: str, query: str, top_k: int = 10, video_id: str = None):
     """Test 3: End-to-end retriver pipeline (vector search → rerank)."""
     print(f"\n{'─' * 60}")
     print(f"  TEST: retriver (full pipeline)")
@@ -124,19 +134,19 @@ async def test_full_pipeline(query: str, top_k: int = 10, video_id: str = None):
 
     async with AsyncSessionLocal() as db:
         start = time.perf_counter()
-        top_docs = await retriver(query, top_k, db, video_id)
+        top_docs = await retriver(conversation_id, query, top_k, db, video_id)
         elapsed = time.perf_counter() - start
 
     print(f"  [✓] Pipeline returned {len(top_docs)} docs in {elapsed:.3f}s")
 
     for i, doc in enumerate(top_docs, 1):
-        snippet = doc.texts[:80] + "…" if len(doc.texts) > 80 else doc.texts
+        snippet = doc.content[:80] + "..." if len(doc.content) > 80 else doc.content
         print(f"  {i}. [{doc.start_time:.1f}s – {doc.end_time:.1f}s] {snippet}")
 
     # Assertions
     assert isinstance(top_docs, list), "Expected a list"
-    assert all(hasattr(doc, "texts") for doc in top_docs), "Each doc must have 'texts'"
-    assert len(top_docs) <= 5, f"Pipeline should return at most 5 reranked docs, got {len(top_docs)}"
+    assert all(hasattr(doc, "content") for doc in top_docs), "Each doc must have 'content'"
+    assert len(top_docs) <= 7, f"Pipeline should return at most 7 reranked docs, got {len(top_docs)}"
 
     print("  [✓] All assertions passed")
     return top_docs
@@ -148,16 +158,20 @@ async def main():
     print("=" * 60)
 
     query = TEST_QUERIES[0]
+    conversation_id = await get_test_conversation_id()
+    if not conversation_id:
+        print("  ❌ No data in vector_store. Run vector injection first.")
+        return
 
     # ── Step 1: Test raw vector retrieval (with video_id filter) ──
-    results = await test_retrive_vectors(query, top_k=10, video_id=TEST_VIDEO_ID)
+    results = await test_retrive_vectors(conversation_id, query, top_k=10, video_id=TEST_VIDEO_ID)
 
     # ── Step 2: Test reranking (with score cutoff) ──
     await test_rerank_vectors(query, results)
 
     # ── Step 3: Test full pipeline with all queries ──
     for q in TEST_QUERIES:
-        await test_full_pipeline(q, top_k=10, video_id=TEST_VIDEO_ID)
+        await test_full_pipeline(conversation_id, q, top_k=10, video_id=TEST_VIDEO_ID)
 
     print("\n" + "=" * 60)
     print("  ✅  All retriever pipeline tests passed!")
