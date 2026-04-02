@@ -23,6 +23,7 @@ async def embed(texts):
         )
         return result
     except Exception as e:
+        # Exponential backoff lagate hobe              
         raise
 
 async def embed_texts(texts:List[Dict])->List[Dict]:
