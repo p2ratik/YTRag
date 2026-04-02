@@ -7,32 +7,32 @@ A full-stack YouTube transcript RAG (retrieval-augmented generation) app. Users 
 ### Architecture diagram
 ```mermaid
 flowchart LR
-  subgraph Client[Frontend (Vite)]
-    UI[Login + Chat UI]
-    LS[localStorage: access_token]
+  subgraph Client["Frontend Vite"]
+    UI["Login and Chat UI"]
+    LS["localStorage access_token"]
   end
 
-  subgraph API[FastAPI Backend]
-    AUTH[Auth API\n/signup, /login, /logout]
-    CHAT[Chat API\n/conversations, /message]
-    WS[WebSocket\n/api/chat/ws]
-    YT[YouTube Ingestion\n/upload-url]
-    RAG[RAG Pipeline\nretrieval + rerank]
-    LLM[LLM Adapter\nGroq streaming]
-    EMB[Embeddings\nOpenAI text-embedding-3-small]
+  subgraph API["FastAPI Backend"]
+    AUTH["Auth API\n/signup, /login, /logout"]
+    CHAT["Chat API\n/conversations, /message"]
+    WS["WebSocket\n/api/chat/ws"]
+    YT["YouTube Ingestion\n/upload-url"]
+    RAG["RAG Pipeline\nretrieval and rerank"]
+    LLM["LLM Adapter\nGroq streaming"]
+    EMB["Embeddings\nOpenAI text-embedding-3-small"]
   end
 
-  subgraph DB[Postgres + pgvector]
-    USERS[(users)]
-    CONVS[(conversations)]
-    MSGS[(messages)]
-    VEC[(vector_store)]
+  subgraph DB["Postgres and pgvector"]
+    USERS[("users")]
+    CONVS[("conversations")]
+    MSGS[("messages")]
+    VEC[("vector_store")]
   end
 
-  subgraph EXT[External Services]
-    YTA[YouTube Transcript API]
-    GROQ[Groq LLM]
-    OAI[OpenAI Embeddings]
+  subgraph EXT["External Services"]
+    YTA["YouTube Transcript API"]
+    GROQ["Groq LLM"]
+    OAI["OpenAI Embeddings"]
   end
 
   UI --> AUTH
